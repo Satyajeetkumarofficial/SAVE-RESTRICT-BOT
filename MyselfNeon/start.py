@@ -9,7 +9,7 @@ from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated, User
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 from config import API_ID, API_HASH, ERROR_MESSAGE
 from database.db import db
-from Rexbots.strings import HELP_TXT, COMMANDS_TXT
+from Rexbots.strings import HELP_TXT
 
 class batch_temp(object):
     IS_BATCH = {}
@@ -74,16 +74,10 @@ async def send_start(client: Client, message: Message):
         await db.add_user(message.from_user.id, message.from_user.first_name)
 
     buttons = [
+        [InlineKeyboardButton("Hᴏᴡ Tᴏ Usᴇ Mᴇ 🤔", callback_data="help_btn")],
         [
-            InlineKeyboardButton("🆘 How To Use", callback_data="help_btn"),
-            InlineKeyboardButton("ℹ️ About Bot", callback_data="about_btn"),
-        ],
-        [
-             InlineKeyboardButton("⚙️ Settings", callback_data="settings_btn")
-        ],
-        [
-            InlineKeyboardButton('📢 Official Channel', url='https://t.me/RexBots_Official'),
-            InlineKeyboardButton('👨‍💻 Developer', url='https://t.me/RexBots_Official')
+            InlineKeyboardButton('Uᴘᴅᴀᴛᴇ 🔥', url='https://t.me/NeonFiles'),
+            InlineKeyboardButton('Aʙᴏᴜᴛ 😎', callback_data="about_btn")
         ]
     ]
     reply_markup = InlineKeyboardMarkup(buttons)
@@ -91,25 +85,21 @@ async def send_start(client: Client, message: Message):
     await client.send_message(
         chat_id=message.chat.id,
         text=(
-            f"<b>👋 Welcome {message.from_user.mention}!</b>\n\n"
-            "<b>I am the Advanced Save Restricted Content Bot by RexBots.</b>\n\n"
-            "<b>🚀 What I Can Do:</b>\n"
-            "‣ Save Restricted Post (Text, Media, Files)\n"
-            "‣ Support Private & Public Channels\n"
-            "‣ Batch/Bulk Mode Supported\n\n"
-            "<b>⚠️ Note:</b> You must <code>/login</code> to your account to use the downloading features."
+            f"<blockquote>**__Yoo !! {message.from_user.mention}__ 😇**</blockquote>\n"
+            "<blockquote>**__I’m Save Restricted Content Bot. I Can Help You Unlock And Save Restricted Posts From Telegram By Their Links.__**\n\n"
+            "**__🔑 Please /login First — This Is Required For Downloading Content.__**</blockquote>\n"
         ),
         reply_markup=reply_markup,
         reply_to_message_id=message.id
     )
 
-    # try:
-    #     await message.react(
-    #         emoji=random.choice(REACTIONS),
-    #         big=True
-    #     )
-    # except Exception as e:
-    #     print(f"Reaction failed: {e}")
+    try:
+        await message.react(
+            emoji=random.choice(REACTIONS),
+            big=True
+        )
+    except Exception as e:
+        print(f"Reaction failed: {e}")
 
 # -------------------
 # Help command (standalone)
@@ -129,7 +119,11 @@ async def send_help(client: Client, message: Message):
 @Client.on_message(filters.command(["cancel"]))
 async def send_cancel(client: Client, message: Message):
     batch_temp.IS_BATCH[message.from_user.id] = True
-    await message.reply_text("❌ Batch Process Cancelled Successfully.")
+    await client.send_message(
+        chat_id=message.chat.id,
+        text="❌ Batch Successfully Cancelled.",
+        quote=True
+    )
 
 # -------------------
 # Handle incoming messages
@@ -164,7 +158,7 @@ async def save(client: Client, message: Message):
                 return
 
             try:
-                acc = Client("saverestricted", session_string=user_data, api_hash=API_HASH, api_id=API_ID, in_memory=True)
+                acc = Client("saverestricted", session_string=user_data, api_hash=API_HASH, api_id=API_ID)
                 await acc.connect()
             except:
                 batch_temp.IS_BATCH[message.from_user.id] = True
@@ -212,21 +206,7 @@ async def save(client: Client, message: Message):
 # -------------------
 
 async def handle_private(client: Client, acc, message: Message, chatid: int, msgid: int):
-    try:
-        msg: Message = await acc.get_messages(chatid, msgid)
-    except Exception as e:
-        # Handle PeerIdInvalid (which might come as generic Exception or RPCError)
-        # We try to refresh dialogs to learn about the peer.
-        print(f"Error fetching message: {e}. Refreshing dialogs...")
-        try:
-            async for dialog in acc.get_dialogs(limit=None):
-                if dialog.chat.id == chatid:
-                    break
-            msg: Message = await acc.get_messages(chatid, msgid)
-        except Exception as e2:
-            print(f"Retry failed: {e2}")
-            return
-
+    msg: Message = await acc.get_messages(chatid, msgid)
     if msg.empty:
         return
 
@@ -402,23 +382,25 @@ async def button_callbacks(client: Client, callback_query):
     elif data == "about_btn":
         me = await client.get_me()
         about_text = (
-            "<b><blockquote>‣ ℹ️ 𝐁𝐎𝐓 𝐈𝐍𝐅𝐎𝐑𝐌𝐀𝐓𝐈𝐎𝐍</blockquote>\n\n"
-            "<i>• 🤖 𝐍𝐚𝐦𝐞 : 𝐒𝐚𝐯𝐞 𝐑𝐞𝐬𝐭𝐫𝐢𝐜𝐭𝐞𝐝 𝐂𝐨𝐧𝐭𝐞𝐧𝐭\n"
-            "• 👨‍💻 𝐎𝐰𝐧𝐞𝐫 : <a href='https://t.me/RexBots_Official'>𝐑𝐞𝐱𝐁𝐨𝐭𝐬</a>\n"
-            "• 📡 𝐔𝐩𝐝𝐚𝐭𝐞𝐬 : <a href='https://t.me/RexBots_Official'>𝐑𝐞𝐱𝐁𝐨𝐭𝐬 𝐎𝐟𝐟𝐢𝐜𝐢𝐚𝐥</a>\n"
-            "• 🐍 𝐋𝐚𝐧𝐠𝐮𝐚𝐠𝐞 : <a href='https://www.python.org/'>𝐏𝐲𝐭𝐡𝐨𝐧 𝟑</a>\n"
-            "• 📚 𝐋𝐢𝐛𝐫𝐚𝐫𝐲 : <a href='https://docs.pyrogram.org/'>𝐏𝐲𝐫𝐨𝐠𝐫𝐚𝐦</a>\n"
-            "• 🗄 𝐃𝐚𝐭𝐚𝐛𝐚𝐬𝐞 : <a href='https://www.mongodb.com/'>𝐌𝐨𝐧𝐠𝐨𝐃𝐁</a>\n"
-            "• 📊 𝐕𝐞𝐫𝐬𝐢𝐨𝐧 : 𝟐.𝟎.𝟏 [𝐒𝐭𝐚𝐛𝐥𝐞]</i></b>"
+            "<b><blockquote>‣ 📝 𝐌𝐘 𝐃𝐄𝐓𝐀𝐈𝐋𝐒</blockquote>\n\n"
+            "<i>• Mʏ Nᴀᴍᴇ : <a href='https://t.me/SaveRestriction_oBot'>Save Restrictions</a>\n"
+            "• Mʏ Bᴇsᴛ Fʀɪᴇɴᴅ : <a href='tg://settings'>Tʜɪs Sᴡᴇᴇᴛɪᴇ ❤️</a>\n"
+            "• Dᴇᴠᴇʟᴏᴘᴇʀ : <a href='https://t.me/MyselfNeon'>@MʏsᴇʟғNᴇᴏɴ</a>\n"
+            "• Lɪʙʀᴀʀʏ : <a href='https://docs.pyrogram.org/'>Pʏʀᴏɢʀᴀᴍ</a>\n"
+            "• Lᴀɴɢᴜᴀɢᴇ : <a href='https://www.python.org/download/releases/3.0/'>Pʏᴛʜᴏɴ 𝟹</a>\n"
+            "• DᴀᴛᴀBᴀsᴇ : <a href='https://www.mongodb.com/'>Mᴏɴɢᴏ DB</a>\n"
+            "• Bᴏᴛ Sᴇʀᴠᴇʀ : <a href='https://heroku.com'>Hᴇʀᴏᴋᴜ</a>\n"
+            "• Bᴜɪʟᴅ Sᴛᴀᴛᴜs : ᴠ𝟸.𝟽 [Sᴛᴀʙʟᴇ]</i></b>"
         )
 
         about_buttons = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("📢 Join Channel", url="https://t.me/RexBots_Official")
+                InlineKeyboardButton("Sᴜᴘᴘᴏʀᴛ 🔊", url="https://t.me/+o1s-8MppL2syYTI9"),
+                InlineKeyboardButton("Sᴏᴜʀᴄᴇ Cᴏᴅᴇ 💡", url="https://myselfneon.github.io/neon/")
             ],
             [
-                InlineKeyboardButton("❌ Close", callback_data="close_btn"),
-                InlineKeyboardButton("🔙 Back", callback_data="start_btn")
+                InlineKeyboardButton("Cʟᴏsᴇ ❌", callback_data="close_btn"),
+                InlineKeyboardButton("⬅️ Bᴀᴄᴋ", callback_data="start_btn")
             ]
         ])
 
@@ -435,46 +417,21 @@ async def button_callbacks(client: Client, callback_query):
     # Home / Start button
     elif data == "start_btn":
         start_buttons = InlineKeyboardMarkup([
+            [InlineKeyboardButton("Hᴏᴡ Tᴏ Usᴇ Mᴇ 🤔", callback_data="help_btn")],
             [
-                InlineKeyboardButton("🆘 How To Use", callback_data="help_btn"),
-                InlineKeyboardButton("ℹ️ About Bot", callback_data="about_btn")
-            ],
-            [
-                InlineKeyboardButton('📢 Official Channel', url='https://t.me/RexBots_Official'),
-                InlineKeyboardButton('👨‍💻 Developer', url='https://t.me/RexBots_Official')
+                InlineKeyboardButton("Uᴘᴅᴀᴛᴇ 🔥", url="https://t.me/NeonFiles"),
+                InlineKeyboardButton("Aʙᴏᴜᴛ 😎", callback_data="about_btn")
             ]
         ])
         await client.edit_message_text(
             chat_id=message.chat.id,
             message_id=message.id,
             text=(
-                f"<b>👋 Welcome {callback_query.from_user.mention}!</b>\n\n"
-                "<b>I am the Advanced Save Restricted Content Bot by RexBots.</b>\n\n"
-                "<b>🚀 What I Can Do:</b>\n"
-                "‣ Save Restricted Post (Text, Media, Files)\n"
-                "‣ Support Private & Public Channels\n"
-                "‣ Batch/Bulk Mode Supported\n\n"
-                "<b>⚠️ Note:</b> You must <code>/login</code> to your account to use the downloading features."
+                f"<blockquote>**__Yoo !! {callback_query.from_user.mention}__ 👋**</blockquote>\n"
+                "<blockquote>**__I’m Save Restricted Content Bot. I Can Help You Unlock And Save Restricted Posts From Telegram By Their Links.__**\n\n"
+                "**__🔑 Please /login First — This Is Required For Downloading Content.__**</blockquote>\n"
             ),
             reply_markup=start_buttons
-        )
-        await callback_query.answer()
-
-    # Settings button (Command List)
-    elif data == "settings_btn":
-        settings_buttons = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton("❌ Close", callback_data="close_btn"),
-                InlineKeyboardButton("🔙 Back", callback_data="start_btn")
-            ]
-        ])
-        await client.edit_message_text(
-            chat_id=message.chat.id,
-            message_id=message.id,
-            text=COMMANDS_TXT,
-            reply_markup=settings_buttons,
-            parse_mode=enums.ParseMode.HTML,
-            disable_web_page_preview=True
         )
         await callback_query.answer()
 
@@ -485,6 +442,5 @@ async def button_callbacks(client: Client, callback_query):
 
 
 # Don't remove Credits
-# Rexbots
-# Developer Telegram @RexBots_Official
-# Update channel - @RexBots_Official
+# Developer Telegram @MyselfNeon
+# Update channel - @NeonFiles

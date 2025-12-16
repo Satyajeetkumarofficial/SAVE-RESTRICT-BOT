@@ -60,6 +60,12 @@ class Bot(Client):
         # Start keep-alive
         self.keep_alive_task = asyncio.create_task(keep_alive())
 
+        # Cache Log Channel Peer
+        try:
+            await self.get_chat(LOG_CHANNEL)
+        except Exception as e:
+            print(f"Failed to cache Log Channel: {e}")
+
         # Bot startup log
         now = datetime.datetime.now(IST)
         text = (
