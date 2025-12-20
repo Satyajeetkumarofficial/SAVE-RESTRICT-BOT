@@ -1,5 +1,5 @@
 import pyromod
-from pyromod.listen import ListenerTypes
+import pyromod.listen
 import asyncio
 import logging
 import datetime
