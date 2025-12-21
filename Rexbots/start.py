@@ -4,6 +4,7 @@ import os
 import asyncio
 import random
 import time
+import shutil
 import pyrogram
 from pyrogram import Client, filters, enums
 from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated, UserAlreadyParticipant, InviteHashExpired, UsernameNotOccupied
@@ -104,6 +105,10 @@ async def upstatus(client, statusfile, message, chat):
 # -------------------
 
 def progress(current, total, message, type):
+    # Check for cancellation
+    if batch_temp.IS_BATCH.get(message.from_user.id):
+        raise Exception("Cancelled")
+
     # Initialize cache if not exists
     if not hasattr(progress, "cache"):
         progress.cache = {}
@@ -224,7 +229,7 @@ async def send_cancel(client: Client, message: Message):
 # Handle incoming messages
 # -------------------
 
-@Client.on_message(filters.text & filters.private)
+@Client.on_message(filters.text & filters.private & ~filters.regex("^/"))
 async def save(client: Client, message: Message):
     if "https://t.me/" in message.text:
         if batch_temp.IS_BATCH.get(message.from_user.id) == False:
@@ -343,22 +348,63 @@ async def handle_private(client: Client, acc, message: Message, chatid: int, msg
             return
 
     smsg = await client.send_message(message.chat.id, '**__Downloading 🚀__**', reply_to_message_id=message.id)
+    
+    # ----------------------------------------
+    # Create unique temp directory for this task
+    # ----------------------------------------
+    temp_dir = f"downloads/{message.id}"
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+
     try:
         asyncio.create_task(downstatus(client, f'{message.id}downstatus.txt', smsg, chat))
     except Exception as e:
         logger.error(f"Error creating download status task: {e}")
+        
     try:
-        file = await acc.download_media(msg, progress=progress, progress_args=[message, "down"])
+        # Download into unique directory (folder path must end with / for Pyrogram)
+        file = await acc.download_media(msg, file_name=f"{temp_dir}/", progress=progress, progress_args=[message, "down"])
         if os.path.exists(f'{message.id}downstatus.txt'):
             os.remove(f'{message.id}downstatus.txt')
     except Exception as e:
+        # Check if cancelled (flag is True) or exception message contains "Cancelled"
+        if batch_temp.IS_BATCH.get(message.from_user.id) or "Cancelled" in str(e):
+            if os.path.exists(f'{message.id}downstatus.txt'):
+                try:
+                    os.remove(f'{message.id}downstatus.txt')
+                except:
+                    pass
+            
+            # Robust Cleanup: Delete the entire temp directory
+            if os.path.exists(temp_dir):
+                try:
+                    shutil.rmtree(temp_dir)
+                except:
+                    pass
+        
+            return await smsg.edit("❌ **Task Cancelled**")
+            
         logger.error(f"Error downloading media: {e}")
+        
+        # Cleanup on error
+        if os.path.exists(temp_dir):
+            try:
+                shutil.rmtree(temp_dir)
+            except:
+                pass
+                
         if ERROR_MESSAGE:
             await client.send_message(message.chat.id, f"Error: {e}", reply_to_message_id=message.id,
                                       parse_mode=enums.ParseMode.HTML)
         return await smsg.delete()
 
     if batch_temp.IS_BATCH.get(message.from_user.id):
+        # Cleanup if cancelled during gap
+        if os.path.exists(temp_dir):
+            try:
+                shutil.rmtree(temp_dir)
+            except:
+                pass
         return
 
     try:
@@ -366,7 +412,14 @@ async def handle_private(client: Client, acc, message: Message, chatid: int, msg
     except Exception as e:
         logger.error(f"Error creating upload status task: {e}")
     caption = msg.caption if msg.caption else None
+    
     if batch_temp.IS_BATCH.get(message.from_user.id):
+         # Cleanup if cancelled during gap
+        if os.path.exists(temp_dir):
+            try:
+                shutil.rmtree(temp_dir)
+            except:
+                pass
         return
 
     try:
@@ -419,6 +472,22 @@ async def handle_private(client: Client, acc, message: Message, chatid: int, msg
             await client.send_photo(chat, file, caption=caption, reply_to_message_id=message.id,
                                     parse_mode=enums.ParseMode.HTML)
     except Exception as e:
+        # Check if cancelled (flag is True) or exception message contains "Cancelled"
+        if batch_temp.IS_BATCH.get(message.from_user.id) or "Cancelled" in str(e):
+            if os.path.exists(f'{message.id}upstatus.txt'):
+                try:
+                    os.remove(f'{message.id}upstatus.txt')
+                except:
+                    pass
+            
+            # Robust Cleanup: Delete the entire temp directory
+            if os.path.exists(temp_dir):
+                try:
+                    shutil.rmtree(temp_dir)
+                except:
+                    pass
+            return await smsg.edit("❌ **Task Cancelled**")
+
         logger.error(f"Error sending media: {e}")
         if ERROR_MESSAGE:
             await client.send_message(message.chat.id, f"Error: {e}", reply_to_message_id=message.id,
@@ -426,8 +495,13 @@ async def handle_private(client: Client, acc, message: Message, chatid: int, msg
 
     if os.path.exists(f'{message.id}upstatus.txt'):
         os.remove(f'{message.id}upstatus.txt')
-    if file and os.path.exists(file):
-        os.remove(file)
+        
+    # Final cleanup of temp directory
+    if os.path.exists(temp_dir):
+        try:
+            shutil.rmtree(temp_dir)
+        except:
+            pass
 
     await client.delete_messages(message.chat.id, [smsg.id])
 

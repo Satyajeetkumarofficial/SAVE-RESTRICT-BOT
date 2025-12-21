@@ -71,7 +71,7 @@ async def login_handler(bot: Client, message: Message):
             await message.reply(
                 "**__Please Check for an OTP in Official Telegram Account. \n\n"
                 "If OTP Is 12345, Please Send It As '12 345' (with space) or '12345'.__**\n\n"
-                "Send /cancel to Cancel."
+                "Send /cancellogin to Cancel."
             )
             
         except PhoneNumberInvalid:
@@ -136,7 +136,7 @@ async def finalize_login(bot, message, temp_client, user_id):
         if user_id in LOGIN_STATE:
              del LOGIN_STATE[user_id]
 
-@Client.on_message(filters.private & filters.command("cancel"))
+@Client.on_message(filters.private & filters.command("cancellogin"))
 async def cancel_login(client: Client, message: Message):
     user_id = message.from_user.id
     if user_id in LOGIN_STATE:
