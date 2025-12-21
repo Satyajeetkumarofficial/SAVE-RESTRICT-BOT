@@ -2,7 +2,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from database.db import db
 from config import ERROR_MESSAGE
-import pyromod  # ✅ Patch Client for .ask()
+
 
 @Client.on_message(filters.command("set_caption") & filters.private)
 async def set_caption(client: Client, message: Message):
