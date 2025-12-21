@@ -10,6 +10,9 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 from config import API_ID, API_HASH, ERROR_MESSAGE
 from database.db import db
 from Rexbots.strings import HELP_TXT, COMMANDS_TXT
+from logger import LOGGER
+
+logger = LOGGER(__name__)
 
 class batch_temp(object):
     IS_BATCH = {}
@@ -175,6 +178,7 @@ async def save(client: Client, message: Message):
                 try:
                     await handle_private(client, acc, message, chatid, msgid)
                 except Exception as e:
+                    logger.error(f"Error handling private chat: {e}")
                     if ERROR_MESSAGE:
                         await client.send_message(message.chat.id, f"Error: {e}", reply_to_message_id=message.id)
 
@@ -183,6 +187,7 @@ async def save(client: Client, message: Message):
                 try:
                     await handle_private(client, acc, message, username, msgid)
                 except Exception as e:
+                    logger.error(f"Error handling batch channel: {e}")
                     if ERROR_MESSAGE:
                         await client.send_message(message.chat.id, f"Error: {e}", reply_to_message_id=message.id)
 
@@ -200,6 +205,7 @@ async def save(client: Client, message: Message):
                     try:
                         await handle_private(client, acc, message, username, msgid)
                     except Exception as e:
+                        logger.error(f"Error copy/handle private: {e}")
                         if ERROR_MESSAGE:
                             await client.send_message(message.chat.id, f"Error: {e}", reply_to_message_id=message.id)
 
@@ -217,14 +223,14 @@ async def handle_private(client: Client, acc, message: Message, chatid: int, msg
     except Exception as e:
         # Handle PeerIdInvalid (which might come as generic Exception or RPCError)
         # We try to refresh dialogs to learn about the peer.
-        print(f"Error fetching message: {e}. Refreshing dialogs...")
+        logger.warning(f"Error fetching message: {e}. Refreshing dialogs...")
         try:
             async for dialog in acc.get_dialogs(limit=None):
                 if dialog.chat.id == chatid:
                     break
             msg: Message = await acc.get_messages(chatid, msgid)
         except Exception as e2:
-            print(f"Retry failed: {e2}")
+            logger.error(f"Retry failed: {e2}")
             return
 
     if msg.empty:
@@ -244,6 +250,7 @@ async def handle_private(client: Client, acc, message: Message, chatid: int, msg
                                       parse_mode=enums.ParseMode.HTML)
             return
         except Exception as e:
+            logger.error(f"Error sending text message: {e}")
             if ERROR_MESSAGE:
                 await client.send_message(message.chat.id, f"Error: {e}", reply_to_message_id=message.id,
                                           parse_mode=enums.ParseMode.HTML)
@@ -255,6 +262,7 @@ async def handle_private(client: Client, acc, message: Message, chatid: int, msg
         file = await acc.download_media(msg, progress=progress, progress_args=[message, "down"])
         os.remove(f'{message.id}downstatus.txt')
     except Exception as e:
+        logger.error(f"Error downloading media: {e}")
         if ERROR_MESSAGE:
             await client.send_message(message.chat.id, f"Error: {e}", reply_to_message_id=message.id,
                                       parse_mode=enums.ParseMode.HTML)
@@ -315,6 +323,7 @@ async def handle_private(client: Client, acc, message: Message, chatid: int, msg
             await client.send_photo(chat, file, caption=caption, reply_to_message_id=message.id,
                                     parse_mode=enums.ParseMode.HTML)
     except Exception as e:
+        logger.error(f"Error sending media: {e}")
         if ERROR_MESSAGE:
             await client.send_message(message.chat.id, f"Error: {e}", reply_to_message_id=message.id,
                                       parse_mode=enums.ParseMode.HTML)

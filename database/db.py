@@ -12,6 +12,9 @@
 
 import motor.motor_asyncio
 from config import DB_NAME, DB_URI
+from logger import LOGGER
+
+logger = LOGGER(__name__)
 
 class Database:
     
@@ -30,6 +33,7 @@ class Database:
     async def add_user(self, id, name):
         user = self.new_user(id, name)
         await self.col.insert_one(user)
+        logger.info(f"New user added to DB: {id} - {name}")
     
     async def is_user_exist(self, id):
         user = await self.col.find_one({'id':int(id)})
@@ -44,6 +48,7 @@ class Database:
 
     async def delete_user(self, user_id):
         await self.col.delete_many({'id': int(user_id)})
+        logger.info(f"User deleted from DB: {user_id}")
 
     async def set_session(self, id, session):
         await self.col.update_one({'id': int(id)}, {'$set': {'session': session}})
@@ -77,9 +82,11 @@ class Database:
     # Premium Support
     async def add_premium(self, id, expiry_date):
         await self.col.update_one({'id': int(id)}, {'$set': {'is_premium': True, 'premium_expiry': expiry_date}})
+        logger.info(f"User {id} granted premium until {expiry_date}")
 
     async def remove_premium(self, id):
         await self.col.update_one({'id': int(id)}, {'$set': {'is_premium': False, 'premium_expiry': None}})
+        logger.info(f"User {id} removed from premium")
 
     async def check_premium(self, id):
         user = await self.col.find_one({'id': int(id)})
@@ -93,9 +100,11 @@ class Database:
     # Ban Support
     async def ban_user(self, id):
         await self.col.update_one({'id': int(id)}, {'$set': {'is_banned': True}})
+        logger.warning(f"User banned: {id}")
 
     async def unban_user(self, id):
         await self.col.update_one({'id': int(id)}, {'$set': {'is_banned': False}})
+        logger.info(f"User unbanned: {id}")
 
     async def is_banned(self, id):
         user = await self.col.find_one({'id': int(id)})

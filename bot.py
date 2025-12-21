@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import datetime
 from datetime import timezone, timedelta
 import aiohttp
@@ -7,6 +6,9 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pyrogram import Client, filters
 from pyrogram.types import Message
 from config import API_ID, API_HASH, BOT_TOKEN, LOG_CHANNEL, KEEP_ALIVE_URL, DB_URI, DB_NAME
+from logger import LOGGER
+
+logger = LOGGER(__name__)
 
 # ✅ Indian Standard Time
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -24,9 +26,9 @@ async def keep_alive():
             if KEEP_ALIVE_URL:
                 try:
                     await session.get(KEEP_ALIVE_URL)
-                    logging.info("Sent keep-alive request.")
+                    logger.info("Sent keep-alive request.")
                 except Exception as e:
-                    logging.error(f"Keep-alive request failed: {e}")
+                    logger.error(f"Keep-alive request failed: {e}")
             await asyncio.sleep(100)
 
 
@@ -47,10 +49,10 @@ class Bot(Client):
         me = await self.get_me()
 
         # 🔍 Debug MongoDB connection
-        print(f"[✅] Connected to MongoDB DB: {db.name}")
-        print(f"[✅] Using Collection: {users_col.name}")
+        logger.info(f"[✅] Connected to MongoDB DB: {db.name}")
+        logger.info(f"[✅] Using Collection: {users_col.name}")
         count = await users_col.count_documents({})
-        print(f"[✅] Current Stored Users: {count}")
+        logger.info(f"[✅] Current Stored Users: {count}")
 
         # Start keep-alive
         self.keep_alive_task = asyncio.create_task(keep_alive())
@@ -59,7 +61,7 @@ class Bot(Client):
         try:
             await self.get_chat(LOG_CHANNEL)
         except Exception as e:
-            print(f"Failed to cache Log Channel: {e}")
+            logger.warning(f"Failed to cache Log Channel: {e}")
 
         # Bot startup log
         now = datetime.datetime.now(IST)
@@ -73,9 +75,9 @@ class Bot(Client):
         try:
             await self.send_message(LOG_CHANNEL, text)
         except Exception as e:
-            print(f"Log send failed: {e}")
+            logger.error(f"Log send failed: {e}")
 
-        print(f"✅ Bot Powered By @{me.username}")
+        logger.info(f"✅ Bot Powered By @{me.username}")
 
     async def stop(self, *args):
         me = await self.get_me()
@@ -91,10 +93,10 @@ class Bot(Client):
         try:
             await self.send_message(LOG_CHANNEL, f"❌ Bot @{me.username} Stopped")
         except Exception as e:
-            print(f"Stop log failed: {e}")
+            logger.error(f"Stop log failed: {e}")
 
         await super().stop()
-        print("Bot Stopped — Bye 👋")
+        logger.info("Bot Stopped — Bye 👋")
 
 
 BotInstance = Bot()
@@ -134,7 +136,7 @@ async def new_user_log(bot: Client, message: Message):
         try:
             await bot.send_message(LOG_CHANNEL, text)
         except Exception as e:
-            print(f"New user log failed: {e}")
+            logger.error(f"New user log failed: {e}")
 
 BotInstance.run()
 

@@ -13,3 +13,10 @@ Rexbots/__pycache__/thumbnail.cpython-311.pyc
 Rexbots/__pycache__/words.cpython-311.pyc
 1464downstatus.txt
 Rexbots Login.session
+bot.py
+database/__pycache__/__init__.cpython-311.pyc
+database/__pycache__/db.cpython-311.pyc
+__pycache__/bot.cpython-311.pyc
+__pycache__/logger.cpython-311.pyc
+logs.txt
+

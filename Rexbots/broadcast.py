@@ -10,6 +10,9 @@ import time
 from pyrogram.types import Message
 import json
 import os
+from logger import LOGGER
+
+logger = LOGGER(__name__)
 
 # ---------------------------------------------------
 # Broadcast helper function
@@ -31,7 +34,7 @@ async def broadcast_messages(user_id, message):
         await db.delete_user(int(user_id))
         return False, "Error"
     except Exception as e:
-        print(f"[!] Broadcast error for {user_id}: {e}")
+        logger.error(f"[!] Broadcast error for {user_id}: {e}")
         return False, "Error"
 
 # ---------------------------------------------------
@@ -148,11 +151,11 @@ async def users_count(bot: Client, message: Message):
         try:
             os.remove(tmp_path)
         except Exception as e:
-            print(f"[!] Failed to Delete File {tmp_path}: {e}")
+            logger.error(f"[!] Failed to Delete File {tmp_path}: {e}")
 
     except Exception as e:
         await msg.edit_text(f"**__⚠️ Error Fetching User Data:__**\n<code>{e}</code>")
-        print(f"[!] /users error: {e}")
+        logger.error(f"[!] /users error: {e}")
 
 
 # Credits

@@ -4,6 +4,9 @@ from database.db import db
 from config import ERROR_MESSAGE, ADMINS
 import datetime
 import asyncio
+from logger import LOGGER
+
+logger = LOGGER(__name__)
 
 # --- User Commands ---
 
@@ -62,6 +65,7 @@ async def add_premium_cmd(client: Client, message: Message):
             pass
             
     except Exception as e:
+        logger.error(f"Error adding premium: {e}")
         await message.reply_text(f"Error: {e}")
 
 @Client.on_message(filters.command("remove_premium") & filters.user(ADMINS))
@@ -80,6 +84,7 @@ async def remove_premium_cmd(client: Client, message: Message):
             pass
 
     except Exception as e:
+        logger.error(f"Error removing premium: {e}")
         await message.reply_text(f"Error: {e}")
 
 @Client.on_message(filters.command("premium_users") & filters.user(ADMINS))
